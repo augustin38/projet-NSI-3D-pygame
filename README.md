@@ -10,3 +10,5 @@ interet du projet : créer un jeu en 3d sur python grace a pygame et au raycasti
 -interface de joueur (inventaire,curseur souris,parametres)
 - créer des easters egg
 - créer des modes de jeu (solo,combats contre mobs,1v1)
+
+https://pyautogui.readthedocs.io/en/latest/mouse.html
