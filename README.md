@@ -7,4 +7,5 @@ interet du projet : créer un jeu en 3d sur python grace a pygame et au raycasti
 - créer une mini map en 2d pour savoir ou le perso se situe dans l'espace
 - programme optimisé (faire consommer le moins de ressources possible pour ne pas lag)
 - avoir des interactions entre le perso et son environnement (NPC,portails entre 2 mondes/salles,ouverture de portes)
-- 
+- créer des easters egg
+- créer des modes de jeu (solo,combats contre mobs,1v1)
