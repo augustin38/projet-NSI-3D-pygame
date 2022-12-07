@@ -2,10 +2,12 @@ import pygame as pg
 import math as m
 from player import Player
 from map import Map
+import trois_D as D
 
 pg.init()
 
-screen = pg.display.set_mode((1600, 800))
+width_x, width_y = 1300,700
+screen = pg.display.set_mode((width_x,width_y))
 pg.display.set_caption("Raycasting")
 
 # Appel de Fonctions
@@ -22,8 +24,9 @@ speed = 3
 sensi = m.radians(1)
 angle = m.radians(90)
 fov_r = m.radians(100)
-radius = 4
-diago = m.sqrt((2 * (map.MAP_SIZE * TS ** 2))
+pix_size = TS * map.MAP_SIZE
+print(pix_size)
+diago = m.sqrt(2 * (map.MAP_SIZE * TS) ** 2)
 print(diago)
 
 clock = pg.time.Clock()
@@ -50,68 +53,82 @@ def Deplacements():
     d_x, d_y = speed * m.sin(player.rotation + angle), speed * m.cos(player.rotation + angle)  # Droite
     g_x, g_y = speed * m.sin(player.rotation - angle), speed * m.cos(player.rotation - angle)  # Gauche
 
-    if get_pressed[pg.K_z] and not Verif(player.x - plus_x, player.y - plus_y):  # Si la case n'est pas un mur
+    if get_pressed[pg.K_z] and Verif(player.x - plus_x, player.y - plus_y):  # Si la case n'est pas un mur
         player.x, player.y = player.x - plus_x, player.y - plus_y
 
-    if get_pressed[pg.K_s] and not Verif(player.x + plus_x, player.y + plus_y):
+    if get_pressed[pg.K_s] and Verif(player.x + plus_x, player.y + plus_y):
         player.x, player.y = player.x + plus_x, player.y + plus_y
 
-    if get_pressed[pg.K_d] and not Verif(player.x + d_x, player.y + d_y):
+    if get_pressed[pg.K_d] and Verif(player.x + d_x, player.y + d_y):
         player.x, player.y = player.x + d_x, player.y + d_y
 
-    if get_pressed[pg.K_q] and not Verif(player.x + g_x, player.y + g_y):
+    if get_pressed[pg.K_q] and Verif(player.x + g_x, player.y + g_y):
         player.x, player.y = player.x + g_x, player.y + g_y
 
+    if get_pressed[pg.K_1]:
+        player.rotation = 0
+    elif get_pressed[pg.K_2]:
+        player.rotation = m.radians(90)
+    elif get_pressed[pg.K_3]:
+        player.rotation = m.radians(180)
+    elif get_pressed[pg.K_4]:
+        player.rotation = m.radians(270)
+    elif get_pressed[pg.K_5]:
+        player.x, player.y = map.MAP_SIZE / 2 * TS, map.MAP_SIZE / 2 * TS
+
     if get_pressed[pg.K_e]:
-        if abs(m.degrees(player.rotation) + 360) < 10 ** (-9):  # S'assure que l'angle est au maximum 360°
+        if m.degrees(player.rotation) + 360 < 10 ** (-3):  # S'assure que l'angle est au maximum 360°
             player.rotation = 0
         elif player.rotation < 10 ** (-5):  # Et la on s'assure qu'il est > 0
             player.rotation = m.radians(360) - (player.rotation - sensi)
         else:
-            player.rotation -= sensi
+            player.rotation = round(player.rotation - sensi, 3)
 
     if get_pressed[pg.K_a]:
-        if abs(m.degrees(player.rotation) - 360) < 10 ** (-9):
+        if m.degrees(player.rotation) > 360:  # Et la on s'assure qu'il est > 0
+            player.rotation = round(player.rotation - m.radians(360) + sensi, 3)
+        elif abs(m.degrees(player.rotation) - 360) < 10 ** (-3):
             player.rotation = 0
         else:
-            player.rotation += sensi
+            player.rotation = round(player.rotation + sensi, 3)
 
     # Pour eviter d'avoir des angle >  à 360
 
 
 def Verif(x_index, y_index):
-    return True if map.map[int(y_index / TS)][int(x_index / TS)] != 0 else False
+    return False if map.map[int(y_index / TS)][int(x_index / TS)] != 0 else True
 
 
-def UpX(rx, x_depth):
-    if rx == 1:
-        return x_depth + TS
+def UpDepth(i, depth):
+    if i == 1:
+        return depth + TS
     else:
-        return x_depth - TS
+        return depth - TS
 
 
-def UpY(ry, y_depth):
-    if ry == 1:
-        return y_depth + TS
-    else:
-        return y_depth - TS
+def InMap(coord):
+    return True if 0 < coord < pix_size else False
 
 
 # Sin = x et cos = y
-def Distance(z):
-    return m.sqrt(((z[0] ** 2) + (z[1] ** 2)))
+def Distance(a, b):
+    return m.sqrt(((a ** 2) + (b ** 2)))
 
 
-def RayCasting():
+def Check(in_map, coord):
+    if in_map:
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                if not Verif(coord[0] + x, coord[1] + y):
+                    pg.draw.circle(screen, pg.Color("dark red"), coord, 3)
+                    return True
+    else:
+        return True
+
+
+def RayCalcul(rot_ray,fov):
     wall = False
-
-    # Position dans la map
-    #pg.draw.circle(screen, (100, 255, 100), (m.floor(player.x / TS) * TS, m.floor(player.y / TS) * TS), 5)
-    #pg.draw.circle(screen, (100, 255, 100), (m.floor(player.x / TS) * TS, m.ceil(player.y / TS) * TS), 5)
-    #pg.draw.circle(screen, (100, 255, 100), (m.ceil(player.x / TS) * TS, m.floor(player.y / TS) * TS), 5)
-    #pg.draw.circle(screen, (100, 255, 100), (m.ceil(player.x / TS) * TS, m.ceil(player.y / TS) * TS), 5)
-
-    rot_d = m.degrees(player.rotation)
+    rot_d = m.degrees(player.rotation)+rot_ray
     sin, cos = m.sin(player.rotation), m.cos(player.rotation)
 
     x_slope = cos / sin if sin != 0 else False
@@ -129,54 +146,73 @@ def RayCasting():
     x_depth = m.floor(player.x / TS) * TS if rx == -1 else m.ceil(player.x / TS) * TS
     y_depth = m.floor(player.y / TS) * TS if ry == -1 else m.ceil(player.y / TS) * TS
 
-    while not wall:
-        if player.rotation == 0 or player.rotation == m.pi:
-            target_x, target_y = player.x, y_depth
-            y_depth = UpY(ry, y_depth)
-            if Verif(target_x, target_y):
-                wall_x, wall_y, wall = target_x, target_y + TS, True
+    if rot_d == 0 or rot_d == 180:
+        while not wall:
+            y_coord = (player.x, y_depth)
+            if not Verif(y_coord[0], y_coord[1]):
+                return (y_coord[0], y_coord[1] + TS if rot_d == 0 else y_coord[1] - 1), rot_d
+            y_depth = UpDepth(ry, y_depth)
 
-        elif player.rotation == m.radians(90) or player.rotation == m.radians(270):
-            target_x, target_y = x_depth, player.y
-            x_depth = UpX(rx, x_depth)
-            if Verif(target_x, target_y):
-                wall_x, wall_y, wall = target_x, target_y, True
+    elif rot_d == 90 or player.rotation == 270:
+        while not wall:
+            x_coord = (x_depth, player.y)
+            if not Verif(x_coord[0], x_coord[1]):
+                return (x_coord[0] + TS if rot_d == 90 else x_coord[0] - 1, x_coord[1]), rot_d
+            x_depth = UpDepth(rx, x_depth)
 
-        else:
-            # target_x, target_y = player.x - sin * d_x * rx, player.y + cos * d_y * ry
-            pg.draw.circle(screen, (0, 0, 255), (x_depth, player.y), 3)
-            pg.draw.circle(screen, (0, 0, 255), (player.x, y_depth), 5)
-
-            x_coord = (x_depth, x_depth * x_slope)
-            y_coord = (y_depth * y_slope, y_depth)
+    else:
+        while not wall:
+            x_coord = (x_depth, player.y + (x_depth - player.x) * x_slope)
+            y_coord = (player.x + (y_depth - player.y) * y_slope, y_depth)
 
             pg.draw.circle(screen, (0, 255, 255), x_coord, 3)
             pg.draw.circle(screen, (0, 255, 255), y_coord, 5)
 
+            d_x, d_y = Distance(x_depth, x_depth * x_slope), Distance(y_depth, y_depth * y_slope)
 
-            d_x, d_y = Distance(x_coord), Distance(y_coord)
-
-
-            if abs(x_coord[1]) > diago:
-                if Verif(x_coord[0] / TS, x_coord[1] / TS):
-                    wall_x, wall_y, wall = x_coord[0], x_coord[1], True
-
-            if abs(y_coord[0]) > diago:
-                if Verif(y_coord[0] / TS, y_coord[1] / TS):
-                    wall_x, wall_y, wall = y_coord[0], y_coord[1], True
+            verif_x = Check(InMap(x_coord[1]), x_coord)
+            verif_y = Check(InMap(y_coord[0]), y_coord)
 
             if d_x < d_y:
-                print("-----------------------------")
-                print(x_depth)
-                x_depth = UpX(rx, x_depth)
-                print(x_depth)
-            else:
-                y_depth = UpY(ry, y_depth)
-            #pg.draw.circle(screen, (255, 125, 65), tuple(target_x), 2)
-            #pg.draw.circle(screen, (255, 125, 65), tuple(target_y), 2)
+                x_depth = UpDepth(rx, x_depth)
 
-    # print((player.x, player.y), (wall_x, wall_y))
-    pg.draw.line(screen, pg.Color("green"), (player.x, player.y), (wall_x, wall_y))
+                if verif_x and not verif_y:
+                    y_depth = UpDepth(ry, y_depth)
+                elif verif_y and not verif_x:
+                    return y_coord, rot_d
+                elif verif_x and verif_y:
+                    return x_coord, rot_d
+                else:
+                    x_depth = UpDepth(rx, x_depth)
+
+            elif d_y < d_x:
+                if verif_x and not verif_y:
+                    y_depth = UpDepth(ry, y_depth)
+                elif verif_y and not verif_x:
+                    return y_coord, rot_d
+                elif verif_x and verif_y:
+                    return y_coord, rot_d
+                else:
+                    y_depth = UpDepth(ry, y_depth)
+
+            elif d_x == d_y:
+
+                y_depth = UpDepth(ry, y_depth)
+                x_depth = UpDepth(rx, x_depth)
+                if not verif_x and verif_y:
+                    return y_coord,rot_d
+                elif verif_x:
+                    return x_coord, rot_d
+
+
+def RayCasting():
+    fov = 100
+    for i in range(fov):
+        end_coord, rot_d = RayCalcul(i,fov)
+        D.frame(player.x, player.y, end_coord, screen, width_x, width_y, TS, fov, rot_d)
+    draw_minimap()
+    end_coord, rot_d = RayCalcul(0, fov)
+    pg.draw.line(screen, pg.Color("green"), (player.x, player.y), end_coord)
 
 
 # Game Loop
@@ -190,13 +226,15 @@ while running:
     screen.fill((0, 0, 0))
 
     Deplacements()
-    draw_minimap()
     RayCasting()
 
+
     # Création du joueur
-    pg.draw.circle(screen, pg.Color("red"), (player.x, player.y), radius)
+    pg.draw.circle(screen, pg.Color("red"), (player.x, player.y), 4)
+    pg.draw.circle(screen, pg.Color("red"), (player.x, player.y), TS / 3, width=1)
+
     pg.draw.line(screen, (255, 0, 0), (player.x, player.y),
-                 (player.x - m.sin(player.rotation) * TS, player.y - m.cos(player.rotation) * TS))
+                 (player.x - m.sin(player.rotation) * TS / 2, player.y - m.cos(player.rotation) * TS / 2))
 
     # Update de l'image
     pg.display.flip()
